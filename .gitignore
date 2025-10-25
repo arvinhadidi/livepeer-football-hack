@@ -17,6 +17,7 @@ temp_*.wav
 temp_*.mp4
 *.wav
 *.mp4
+*.mp3
 *.avi
 
 # Video files (don't commit large videos)
