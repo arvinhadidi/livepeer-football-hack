@@ -1,0 +1,39 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+
+# API Keys
+.env
+*.env
+
+# Temporary files
+temp_*.wav
+temp_*.mp4
+*.wav
+*.mp4
+*.avi
+
+# Video files (don't commit large videos)
+input_vids/
+output_vids/
+output_with_transcription.mp4
+mood_changes.txt
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Model cache (Whisper downloads models)
+~/.cache/huggingface/
