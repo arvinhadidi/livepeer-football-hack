@@ -11,6 +11,7 @@ from faster_whisper import WhisperModel
 import wave
 import pygame
 import random
+import shutil
 
 # Configuration
 DAYDREAM_API_KEY = os.getenv("DAYDREAM_API_KEY")
@@ -18,23 +19,26 @@ WHISPER_MODEL = "base"
 SAMPLE_RATE = 16000
 CHUNK_DURATION = 5  # Process audio every 5 seconds
 AUDIO_FOLDER = "incredibles_audio"  # Folder with mood music files
+MOOD_IMAGES_FOLDER = "mood_images"  # Folder with mood images (excited.png, sad.png, etc.)
+MOOD_TEXT_FILE = "current_mood.txt"  # Text file for OBS
+MOOD_IMAGE_FILE = "current_mood.png"  # Image file for OBS
 
 # Mood-based visual styles
 MOOD_STYLES = {
     "excited": {
-        "prompt": "explosive energy, vibrant neon colors, high quality, electrifying atmosphere, intense action, yellow bright sunshine colours, bright",
-        "negative_prompt": "calm, muted, static, boring, dull, dark",
-        "num_inference_steps": 35,
+        "prompt": "explosive energy, vibrant neon colors, dynamic motion blur, electrifying atmosphere, intense action, yellow bright sunshine colours",
+        "negative_prompt": "calm, muted, static, boring",
+        "num_inference_steps": 40,
     },
     "sad": {
-        "prompt": "muted grayscale, melancholic dark grey tones, rain-soaked atmosphere, somber mood, dramatic shadows, emotional depth, very dark",
+        "prompt": "melancholic blue tones, rain-soaked atmosphere, somber mood, dramatic shadows, emotional depth, dark, grey",
         "negative_prompt": "bright, cheerful, colorful, happy",
-        "num_inference_steps": 30,
+        "num_inference_steps": 45,
     },
     "boring": {
-        "prompt": "light brown, vintage film grain, slow motion aesthetic, minimalist composition, subdued atmosphere",
+        "prompt": "muted grayscale, vintage film grain, slow motion aesthetic, minimalist composition, subdued atmosphere",
         "negative_prompt": "vibrant, exciting, dynamic, colorful",
-        "num_inference_steps": 25,
+        "num_inference_steps": 35,
     },
     "neutral": {
         "prompt": "clean broadcast style, professional sports coverage, balanced colors",
@@ -42,9 +46,9 @@ MOOD_STYLES = {
         "num_inference_steps": 30,
     }, 
     "terrible": { 
-        "prompt": "dark, dreary, doom, depression",
+        "prompt": "clean broadcast style, professional sports coverage, balanced colors",
         "negative_prompt": "bright, cheerful, colorful, happy, amazing",
-        "num_inference_steps": 20, 
+        "num_inference_steps": 25, 
     }
 }
 
@@ -231,6 +235,23 @@ def update_stream_mood(stream_id, mood):
         print(f"❌ Error updating stream: {response.status_code}")
         return False
 
+def update_obs_overlays(mood):
+    """Update text and image files for OBS overlays"""
+    # Update text file
+    with open(MOOD_TEXT_FILE, 'w') as f:
+        f.write(mood.upper())
+    
+    # Update image file (copy mood-specific image to current_mood.png)
+    mood_image_path = os.path.join(MOOD_IMAGES_FOLDER, f"{mood}.png")
+    if os.path.exists(mood_image_path):
+        shutil.copy(mood_image_path, MOOD_IMAGE_FILE)
+        print(f"🖼️  Updated overlay image to {mood}.png")
+    else:
+        print(f"⚠️  Image not found: {mood_image_path}")
+        # Create blank image if none exists
+        if os.path.exists(MOOD_IMAGE_FILE):
+            os.remove(MOOD_IMAGE_FILE)
+
 def main():
     print("=" * 60)
     print("🎮 DAYDREAM LIVE REACTION-BASED VIDEO TRANSFORM")
@@ -251,8 +272,18 @@ def main():
     print(f"   - Server: {stream['whip_url']}")
     print(f"   - Bearer Token: (leave blank)")
     print("3. Add video source (your game footage)")
-    print("4. Click 'Start Streaming'")
-    print(f"5. Open in browser: https://lvpr.tv/?v={stream['output_playback_id']}")
+    print("\n4. ADD OVERLAYS:")
+    print("   a) Text overlay:")
+    print("      - Add 'Text (GDI+)' source")
+    print(f"      - Check 'Read from file': {MOOD_TEXT_FILE}")
+    print("      - Font: White, size 48, bold")
+    print("      - Position: Bottom right corner")
+    print("   b) Image overlay:")
+    print("      - Add 'Image' source")
+    print(f"      - Select file: {MOOD_IMAGE_FILE}")
+    print("      - Position: Above text, bottom right")
+    print("\n5. Click 'Start Streaming'")
+    print(f"6. Open in browser: https://lvpr.tv/?v={stream['output_playback_id']}")
     print("-" * 60)
     print("\nPress ENTER when OBS is streaming...")
     input()
@@ -275,6 +306,7 @@ def main():
     recorder.start_recording()
     current_mood = "neutral"
     update_stream_mood(stream_id, current_mood)
+    update_obs_overlays(current_mood)
     music_player.play_mood(current_mood)
     
     try:
@@ -298,6 +330,7 @@ def main():
                     if new_mood != current_mood:
                         print(f"\n🎨 Mood change: {current_mood} → {new_mood}")
                         update_stream_mood(stream_id, new_mood)
+                        update_obs_overlays(new_mood)
                         music_player.play_mood(new_mood)
                         current_mood = new_mood
                         print()
